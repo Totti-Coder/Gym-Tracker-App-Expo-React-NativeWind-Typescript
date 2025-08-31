@@ -6,6 +6,7 @@ import {Ionicons} from "@expo/vector-icons"
 
 export default function Page() {
   const { signIn, setActive, isLoaded } = useSignIn()
+  const [isLoading, setisLoading] = React.useState(false)
   const router = useRouter()
 
   const [emailAddress, setEmailAddress] = React.useState('')
@@ -77,11 +78,13 @@ export default function Page() {
     </View>
 </View>
 
+{/*Formulario de Inicio de Sesion*/}
 <View className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
     <Text className='text-2xl font-bold text-gray-900 mb-6 text-center'>
       Bienvenido
     </Text>
 
+{/*Email Input*/}
     <View className="mb-4">
       <Text className="text-sm font-medium text-gray-700 mb-2">
         Email
@@ -95,34 +98,65 @@ export default function Page() {
         placeholderTextColor="#9CA3AF"
         onChangeText={setEmailAddress}
         className='flex-1 ml-3 text-gray-900'
-        >
-          
+        editable={!isLoading}
+        > 
         </TextInput>
       </View>
     </View>
 
+{/*Password Input*/}
+<View className="mb-6">
+  <Text className='text-sm font-medium text-gray-700 mb-2'>
+    Password
+  </Text>
+  <View className='flex-row items-center bg-gray-50 rounded-xl px-4 py-4 border border-gray-2000'>
+    <Ionicons name="lock-closed-outline" size={20} color="#6B7280"/>
+    <TextInput
+    value={password}
+    placeholder='Enter your password'
+    placeholderTextColor="#9CA3AF"
+    secureTextEntry={true}
+    onChangeText={setPassword}
+    className='flex-1 ml-3 text-gray-900'
+    editable={!isLoading}
+    />
+  </View>
 </View>
-      <Text>Sign in</Text>
-      <TextInput
-        autoCapitalize="none"
-        value={emailAddress}
-        placeholder="Enter email"
-        onChangeText={(emailAddress) => setEmailAddress(emailAddress)}
-      />
-      <TextInput
-        value={password}
-        placeholder="Enter password"
-        secureTextEntry={true}
-        onChangeText={(password) => setPassword(password)}
-      />
-      <TouchableOpacity onPress={onSignInPress}>
-        <Text>Continue</Text>
+
+
+</View>
+
+{/* Sign in button */}
+      <TouchableOpacity 
+      onPress={onSignInPress}
+      disabled={isLoading}
+      className={`rounded-xl py-4 shadow-sm mb-4 ${isLoading ? "bg-gray-400" : "bg-blue-600"}`}
+      activeOpacity={0.8}
+      >
+      <View className='flex-row items-center justify-center'>
+        {isLoading ? (
+          <Ionicons name="refresh" size={20} color="white"/>
+        ) : (
+          <Ionicons name="log-in-outline" size={20} color="white"/>
+        )}
+        <Text className='text-white font-semibold text-lg ml-2'>
+          {isLoading ? "Iniciando Sesion..." : "Inicia Sesion"}
+        </Text>
+      </View>
       </TouchableOpacity>
+        
+        {/* Divider */}
+        <View className='flex-row items-center my-4'>
+          <View className='flex-1 h-px bg-gray-200'/>
+          <Text className='px-4 text-gray-500 text-sm'>o</Text>
+          <View className='flex-1 h-px bg-gray-200'/>
+        </View>
       <View style={{ display: 'flex', flexDirection: 'row', gap: 3 }}>
         <Link href="/sign-up">
-          <Text>Sign up</Text>
+          <Text>Inicia Sesion</Text>
         </Link>
       </View>
+      
       </KeyboardAvoidingView>
     </SafeAreaView>
   )
