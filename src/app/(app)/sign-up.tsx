@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  Alert,
 } from "react-native";
 import { useSignUp } from "@clerk/clerk-expo";
 import { Link, useRouter } from "expo-router";
@@ -19,31 +20,93 @@ export default function SignUpScreen() {
 
   const [emailAddress, setEmailAddress] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const [isLoading, setisLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
   const [pendingVerification, setPendingVerification] = React.useState(false);
   const [code, setCode] = React.useState("");
+  const [error, setError] = React.useState("");
 
   // Handle submission of sign-up form
   const onSignUpPress = async () => {
-    if (!isLoaded) return;
+    if (!isLoaded) {
+      console.log("Clerk no está cargado aún");
+      return;
+    }
 
-    // Start sign-up process using email and password provided
+    // Validaciones básicas
+    if (!emailAddress.trim()) {
+      Alert.alert("Error", "Por favor ingresa tu email");
+      return;
+    }
+
+    if (!password.trim()) {
+      Alert.alert("Error", "Por favor ingresa tu contraseña");
+      return;
+    }
+
+    if (password.length < 8) {
+      Alert.alert("Error", "La contraseña debe tener al menos 8 caracteres");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
     try {
-      await signUp.create({
+      console.log("1. Creando usuario en Clerk...");
+
+      // Start sign-up process using email and password provided
+      const createResult = await signUp.create({
         emailAddress,
         password,
       });
 
+      console.log("2. Usuario creado exitosamente:", createResult.id);
+      console.log("3. Preparando verificación por email...");
+
       // Send user an email with verification code
-      await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      const prepareResult = await signUp.prepareEmailAddressVerification({
+        strategy: "email_code",
+      });
+
+      console.log("4. Email de verificación enviado:", prepareResult);
+      console.log("5. Cambiando a pantalla de verificación...");
 
       // Set 'pendingVerification' to true to display second form
-      // and capture OTP code
       setPendingVerification(true);
+
+      console.log("6. Estado cambiado a pendingVerification:", true);
     } catch (err) {
-      // See https://clerk.com/docs/custom-flows/error-handling
-      // for more info on error handling
-      console.error(JSON.stringify(err, null, 2));
+      console.error("Error en registro:", JSON.stringify(err, null, 2));
+
+      // Mostrar error específico al usuario
+      let errorMessage = "Error al crear la cuenta";
+
+      if (err.errors && err.errors.length > 0) {
+        const firstError = err.errors[0];
+        switch (firstError.code) {
+          case "form_identifier_exists":
+            errorMessage = "Este email ya está registrado";
+            break;
+          case "form_password_pwned":
+            errorMessage =
+              "Esta contraseña es muy común, elige otra más segura";
+            break;
+          case "form_password_too_common":
+            errorMessage =
+              "Esta contraseña es muy común, elige otra más segura";
+            break;
+          case "form_password_length_too_short":
+            errorMessage = "La contraseña debe tener al menos 8 caracteres";
+            break;
+          default:
+            errorMessage = firstError.message || "Error al crear la cuenta";
+        }
+      }
+
+      Alert.alert("Error", errorMessage);
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -51,42 +114,186 @@ export default function SignUpScreen() {
   const onVerifyPress = async () => {
     if (!isLoaded) return;
 
+    if (!code.trim()) {
+      Alert.alert("Error", "Por favor ingresa el código de verificación");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
     try {
-      // Use the code the user provided to attempt verification
+      console.log("Verificando código...");
+
+      // Usa el codigo que se le proporciono al usuario para verificar el correo electronico
       const signUpAttempt = await signUp.attemptEmailAddressVerification({
         code,
       });
 
-      // If verification was completed, set the session to active
-      // and redirect the user
+      // Si la verificacion fue completada, implementa la sesion como activa
       if (signUpAttempt.status === "complete") {
         await setActive({ session: signUpAttempt.createdSessionId });
+        console.log("Verificación exitosa, redirigiendo...");
         router.replace("/");
       } else {
-        // If the status is not complete, check why. User may need to
-        // complete further steps.
-        console.error(JSON.stringify(signUpAttempt, null, 2));
+        console.error(
+          "Verificación incompleta:",
+          JSON.stringify(signUpAttempt, null, 2)
+        );
+        Alert.alert(
+          "Error",
+          "Verificación incompleta. Por favor intenta de nuevo."
+        );
       }
     } catch (err) {
-      // See https://clerk.com/docs/custom-flows/error-handling
-      // for more info on error handling
-      console.error(JSON.stringify(err, null, 2));
+      console.error("Error en verificación:", JSON.stringify(err, null, 2));
+
+      let errorMessage = "Código de verificación incorrecto";
+      if (err.errors && err.errors.length > 0) {
+        errorMessage = err.errors[0].message || errorMessage;
+      }
+
+      Alert.alert("Error", errorMessage);
+      setError(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   if (pendingVerification) {
     return (
-      <>
-        <Text>Verify your email</Text>
-        <TextInput
-          value={code}
-          placeholder="Enter your verification code"
-          onChangeText={(code) => setCode(code)}
-        />
-        <TouchableOpacity onPress={onVerifyPress}>
-          <Text>Verify</Text>
-        </TouchableOpacity>
-      </>
+      <SafeAreaView className="flex-1 bg-gray-50">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          className="flex-1"
+        >
+          <View className="flex-1 px-6 justify-center">
+            <View
+              style={{
+                backgroundColor: "white",
+                borderRadius: 16,
+                padding: 24,
+                marginBottom: 24,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 1 },
+                shadowOpacity: 0.05,
+                shadowRadius: 2,
+                elevation: 2,
+                borderWidth: 1,
+                borderColor: "#f3f4f6",
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 24,
+                  fontWeight: "bold",
+                  color: "#111827",
+                  marginBottom: 8,
+                  textAlign: "center",
+                }}
+              >
+                Verifica tu email
+              </Text>
+
+              <Text
+                style={{
+                  fontSize: 16,
+                  color: "#6b7280",
+                  textAlign: "center",
+                  marginBottom: 24,
+                  lineHeight: 22,
+                }}
+              >
+                Hemos enviado un código de verificación a{"\n"}
+                <Text style={{ fontWeight: "600", color: "#111827" }}>
+                  {emailAddress}
+                </Text>
+              </Text>
+
+              {error ? (
+                <Text
+                  style={{
+                    color: "#ef4444",
+                    textAlign: "center",
+                    marginBottom: 16,
+                  }}
+                >
+                  {error}
+                </Text>
+              ) : null}
+
+              <View style={{ marginBottom: 24 }}>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    fontWeight: "500",
+                    color: "#374151",
+                    marginBottom: 8,
+                  }}
+                >
+                  Código de verificación
+                </Text>
+                <TextInput
+                  value={code}
+                  placeholder="Ingresa el código de 6 dígitos"
+                  placeholderTextColor="#9CA3AF"
+                  onChangeText={setCode}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  editable={!isLoading}
+                  style={{
+                    backgroundColor: "#f9fafb",
+                    borderRadius: 12,
+                    paddingHorizontal: 16,
+                    paddingVertical: 16,
+                    borderWidth: 1,
+                    borderColor: "#e5e7eb",
+                    fontSize: 18,
+                    textAlign: "center",
+                    letterSpacing: 4,
+                  }}
+                />
+              </View>
+
+              <TouchableOpacity
+                onPress={onVerifyPress}
+                disabled={isLoading}
+                style={{
+                  backgroundColor: isLoading ? "#9ca3af" : "#2563eb",
+                  borderRadius: 12,
+                  paddingVertical: 16,
+                  marginBottom: 16,
+                }}
+              >
+                <View className="flex-row items-center justify-center">
+                  {isLoading ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <Ionicons
+                      name="checkmark-outline"
+                      size={20}
+                      color="white"
+                    />
+                  )}
+                  <Text className="text-white font-semibold text-lg ml-2">
+                    {isLoading ? "Verificando..." : "Verificar código"}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setPendingVerification(false)}
+                className="flex-row items-center"
+              >
+                <Ionicons name="arrow-back-outline" size={20} color="#6b7280" />
+                <Text className="text-gray-500 text-sm ml-2">
+                  Volver al registro
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     );
   }
 
@@ -129,7 +336,7 @@ export default function SignUpScreen() {
                   textAlign: "center",
                 }}
               >
-                Unete a Gym-Tracker
+                Únete a Gym-Tracker
               </Text>
 
               <View style={{ alignItems: "center" }}>
@@ -174,6 +381,18 @@ export default function SignUpScreen() {
                 Crea tu cuenta
               </Text>
 
+              {error ? (
+                <Text
+                  style={{
+                    color: "#ef4444",
+                    textAlign: "center",
+                    marginBottom: 16,
+                  }}
+                >
+                  {error}
+                </Text>
+              ) : null}
+
               {/* Email Input */}
               <View style={{ marginBottom: 16 }}>
                 <Text
@@ -205,6 +424,8 @@ export default function SignUpScreen() {
                     placeholder="Correo electrónico"
                     placeholderTextColor="#9CA3AF"
                     onChangeText={setEmailAddress}
+                    editable={!isLoading}
+                    keyboardType="email-address"
                     style={{
                       flex: 1,
                       marginLeft: 12,
@@ -250,13 +471,13 @@ export default function SignUpScreen() {
                     placeholderTextColor="#9CA3AF"
                     secureTextEntry
                     onChangeText={setPassword}
+                    editable={!isLoading}
                     style={{
                       flex: 1,
                       marginLeft: 12,
                       color: "#111827",
                       fontSize: 16,
                     }}
-                    editable={!isLoading}
                   />
                 </View>
                 <Text className="text-xs text-gray-500 mt-1">
@@ -264,7 +485,7 @@ export default function SignUpScreen() {
                 </Text>
               </View>
 
-              {/* Boton de creacion de cuenta */}
+              {/* Botón de creación de cuenta */}
               <TouchableOpacity
                 onPress={onSignUpPress}
                 disabled={isLoading}
@@ -277,9 +498,7 @@ export default function SignUpScreen() {
               >
                 <View className="flex-row items-center justify-center">
                   {isLoading ? (
-                    <ActivityIndicator 
-                    size="small" 
-                    color="white" />
+                    <ActivityIndicator size="small" color="white" />
                   ) : (
                     <Ionicons
                       name="person-add-outline"
@@ -292,17 +511,28 @@ export default function SignUpScreen() {
                   </Text>
                 </View>
               </TouchableOpacity>
-
-              {/* Already have an account */}
-              <View style={{ flexDirection: "row", justifyContent: "center" }}>
-                <Text>Ya tienes una cuenta? </Text>
-                <Link href="/sign-in">
-                  <Text style={{ color: "#2563eb", fontWeight: "600" }}>
-                    Inicia sesion
-                  </Text>
-                </Link>
+              <View>
+                <Text className="text-xs text-gray-500 text-center -mt-1 mb-4">
+                  Creando tu cuenta, estás aceptando nuestros términos de
+                  servicio y política de privacidad
+                </Text>
               </View>
             </View>
+            {/* Sección de vuelta al inicio de sesión */}
+            <View style={{ flexDirection: "row", justifyContent: "center" }}>
+              <Text>¿Ya tienes una cuenta? </Text>
+              <Link href="/sign-in">
+                <Text style={{ color: "#2563eb", fontWeight: "600" }}>
+                  Inicia sesión
+                </Text>
+              </Link>
+            </View>
+          </View>
+          {/*Footer*/}
+          <View className="pb-6">
+            <Text className="text-center text-gray-500 text-sm">
+              ¿Preparado para tu transformación física?
+            </Text>
           </View>
         </View>
       </KeyboardAvoidingView>
