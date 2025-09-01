@@ -54,7 +54,7 @@ export default function SignUpScreen() {
     try {
       console.log("1. Creando usuario en Clerk...");
 
-      // Start sign-up process using email and password provided
+      // Comenzando el proceso de crear cuenta usando el correo y la password recividos 
       const createResult = await signUp.create({
         emailAddress,
         password,
@@ -63,7 +63,7 @@ export default function SignUpScreen() {
       console.log("2. Usuario creado exitosamente:", createResult.id);
       console.log("3. Preparando verificación por email...");
 
-      // Send user an email with verification code
+      // Se manda un correo al usuario para verificar su identidad
       const prepareResult = await signUp.prepareEmailAddressVerification({
         strategy: "email_code",
       });
@@ -71,14 +71,14 @@ export default function SignUpScreen() {
       console.log("4. Email de verificación enviado:", prepareResult);
       console.log("5. Cambiando a pantalla de verificación...");
 
-      // Set 'pendingVerification' to true to display second form
+      // Activa la pantalla de verificacion si la password y el correo son adecuados
       setPendingVerification(true);
 
       console.log("6. Estado cambiado a pendingVerification:", true);
     } catch (err) {
       console.error("Error en registro:", JSON.stringify(err, null, 2));
 
-      // Mostrar error específico al usuario
+      // Mostrar errores especificos al usuario
       let errorMessage = "Error al crear la cuenta";
 
       if (err.errors && err.errors.length > 0) {
