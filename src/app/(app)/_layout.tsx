@@ -1,32 +1,33 @@
 import { useAuth } from "@clerk/clerk-expo";
-import { Stack, Redirect } from "expo-router";
-import { ActivityIndicator, View, StyleSheet } from "react-native";
+import { Stack } from "expo-router";
+import { ActivityIndicator, View } from "react-native";
 
-function Layout(){
-  const { isLoaded, isSignedIn, userId, sessionId, getToken } = useAuth();
+function Layout() {
+  const { isLoaded, isSignedIn } = useAuth();
 
-  console.log("isSignedIn >>>", isSignedIn)
+  console.log("isSignedIn >>>", isSignedIn);
 
-  if(!isLoaded){
-    return(
+  if (!isLoaded) {
+    return (
       <View className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" color="#0000ff"/>
+        <ActivityIndicator size="large" color="#0000ff" />
       </View>
-    )
+    );
   }
-  return(
+
+  return (
     <Stack>
       <Stack.Protected guard={isSignedIn}>
-        <Stack.Screen name="(tabs)" options={{headerShown: false}}></Stack.Screen>
+        {/* Mantén solo el layout de tabs */}
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack.Protected>
 
       <Stack.Protected guard={!isSignedIn}>
-        <Stack.Screen name="sign-in" options={{headerShown: false}}/>
-        <Stack.Screen name="sign-up" options={{headerShown: false}}/>
+        <Stack.Screen name="sign-in" options={{ headerShown: false }} />
+        <Stack.Screen name="sign-up" options={{ headerShown: false }} />
       </Stack.Protected>
     </Stack>
-  )
-  
- 
+  );
 }
+
 export default Layout;

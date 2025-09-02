@@ -170,7 +170,9 @@ export default function Page() {
                         flex: 1,
                         marginLeft: 12,
                         color: '#111827',
-                        fontSize: 16
+                        fontSize: 16,
+                        borderWidth: 0, 
+                        outlineWidth: 0
                       }}
                     />
                   </View>
@@ -207,7 +209,9 @@ export default function Page() {
                         flex: 1,
                         marginLeft: 12,
                         color: '#111827',
-                        fontSize: 16
+                        fontSize: 16,
+                        borderWidth: 0, 
+                        outlineWidth: 0
                       }}
                       editable={!isLoading}
                     />

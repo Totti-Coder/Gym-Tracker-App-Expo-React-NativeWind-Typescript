@@ -263,6 +263,8 @@ export default function SignUpScreen() {
                   borderRadius: 12,
                   paddingVertical: 16,
                   marginBottom: 16,
+                  borderWidth: 0, 
+                  outlineWidth: 0
                 }}
               >
                 <View className="flex-row items-center justify-center">
@@ -431,6 +433,8 @@ export default function SignUpScreen() {
                       marginLeft: 12,
                       color: "#111827",
                       fontSize: 16,
+                      borderWidth: 0, 
+                      outlineWidth: 0
                     }}
                   />
                 </View>
@@ -477,6 +481,8 @@ export default function SignUpScreen() {
                       marginLeft: 12,
                       color: "#111827",
                       fontSize: 16,
+                      borderWidth: 0, 
+                      outlineWidth: 0
                     }}
                   />
                 </View>

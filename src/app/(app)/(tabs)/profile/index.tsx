@@ -13,7 +13,9 @@ export default function ProfilePage() {
       console.error("Error cerrando sesión:", error);
       Alert.alert("Error", "No se pudo cerrar sesión. Intenta de nuevo.");
     }
+    
   };
+  
 
   return (
     <SafeAreaView className="flex flex-1">
